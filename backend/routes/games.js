@@ -2,7 +2,11 @@ const express = require('express');
 const pool = require('../config/database');
 const authenticateToken = require('../middleware/auth');
 
+const requireDb = require('../middleware/requireDb');
 const router = express.Router();
+
+// Require DB for games routes
+router.use(requireDb);
 
 // Get all games/matches (protected route)
 router.get('/', authenticateToken, async (req, res) => {

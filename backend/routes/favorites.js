@@ -2,9 +2,11 @@ const express = require('express');
 const pool = require('../config/database');
 const authenticateToken = require('../middleware/auth');
 
+const requireDb = require('../middleware/requireDb');
 const router = express.Router();
 
-// All favorites routes require authentication
+// Require DB and authentication for favorites routes
+router.use(requireDb);
 router.use(authenticateToken);
 
 // Add to favorites

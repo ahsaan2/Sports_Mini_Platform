@@ -3,7 +3,17 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
+if (!process.env.JWT_SECRET) {
+  console.warn('Warning: JWT_SECRET is not set. Using default dev secret. Set JWT_SECRET in .env for production.');
+} 
+
+const requireDb = require('../middleware/requireDb');
+const authenticateToken = require('../middleware/auth');
 const router = express.Router();
+
+// Require DB for auth-related routes
+router.use(requireDb);
 
 // Register
 router.post('/register', async (req, res) => {
@@ -39,7 +49,7 @@ router.post('/register', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -85,7 +95,7 @@ router.post('/login', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -100,6 +110,25 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Current user (from token). If DB is configured, fetch full user record, otherwise return token payload
+router.get('/me', authenticateToken, async (req, res) => {
+  const tokenUser = req.user;
+  try {
+    if (pool.isConfigured) {
+      const result = await pool.query('SELECT id, name, email FROM users WHERE id = $1', [tokenUser.userId]);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      return res.json(result.rows[0]);
+    }
+    // Fallback: return token payload when DB not available
+    res.json({ id: tokenUser.userId, email: tokenUser.email });
+  } catch (error) {
+    console.error('Get current user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
