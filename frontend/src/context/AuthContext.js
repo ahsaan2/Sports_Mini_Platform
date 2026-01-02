@@ -29,20 +29,21 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       // Fetch user data from backend to ensure up-to-date profile
       if (!user) {
-        api.get('/auth/me')
-          .then((res) => {
+        (async () => {
+          try {
+            const res = await api.get('/auth/me');
             setUser(res.data);
             localStorage.setItem('user', JSON.stringify(res.data));
-          })
-          .catch((err) => {
+          } catch (err) {
             // If unauthorized or server down, clear token and user
             if (err.response && err.response.status === 401) {
               setToken(null);
               setUser(null);
             }
-            // otherwise, keep token and try again later
-          })
-          .finally(() => setLoading(false));
+          } finally {
+            setLoading(false);
+          }
+        })();
         return; // avoid setting loading=false twice
       }
     } else {
@@ -53,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
     }
     setLoading(false);
-  }, [token]);
+  }, [token, user]);
 
   const login = (userData, authToken) => {
     setUser(userData);

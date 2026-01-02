@@ -34,6 +34,18 @@ const FilterBar = ({ sports, providers, selectedFilter, onFilterChange }) => {
           ))}
         </select>
       </div>
+      <div className="filter-section">
+        <label>Favorites:</label>
+        <div className="favorites-toggle">
+          <input
+            id="favorites-toggle"
+            type="checkbox"
+            checked={selectedFilter.type === 'favorites'}
+            onChange={(e) => onFilterChange('favorites', e.target.checked ? 'true' : 'all')}
+          />
+          <label htmlFor="favorites-toggle">Favorites only</label>
+        </div>
+      </div>
     </div>
   );
 };

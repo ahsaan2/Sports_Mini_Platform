@@ -11,11 +11,21 @@ const GamesList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedFilter, setSelectedFilter] = useState({ type: null, value: null });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit] = useState(10);
 
+  // Debounce searchQuery updates to reduce immediate network requests and avoid focus loss
   useEffect(() => {
     fetchFilters();
-    fetchGames();
-  }, [selectedFilter]);
+
+    const timer = setTimeout(() => {
+      fetchGames();
+    }, 250); // 250ms debounce
+
+    return () => clearTimeout(timer);
+  }, [selectedFilter, page, searchQuery]);
 
   const fetchFilters = async () => {
     try {
@@ -34,13 +44,21 @@ const GamesList = () => {
     setLoading(true);
     setError('');
     try {
-      const params = {};
+      const params = { page, limit };
       if (selectedFilter.type && selectedFilter.value) {
-        params.filter = selectedFilter.value;
-        params.type = selectedFilter.type;
+        if (selectedFilter.type === 'favorites') {
+          params.favorites = true;
+        } else {
+          params.filter = selectedFilter.value;
+          params.type = selectedFilter.type;
+        }
+      }
+      if (searchQuery && searchQuery.trim() !== '') {
+        params.q = searchQuery.trim();
       }
       const response = await api.get('/games', { params });
-      setGames(response.data);
+      setGames(response.data.items);
+      setTotalPages(response.data.totalPages || 1);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load games');
     } finally {
@@ -49,6 +67,18 @@ const GamesList = () => {
   };
 
   const handleFilterChange = (type, value) => {
+    // Reset to first page when filters change
+    setPage(1);
+
+    if (type === 'favorites') {
+      if (value === 'true') {
+        setSelectedFilter({ type: 'favorites', value: 'true' });
+      } else {
+        setSelectedFilter({ type: null, value: null });
+      }
+      return;
+    }
+
     if (value === 'all') {
       setSelectedFilter({ type: null, value: null });
     } else {
@@ -70,13 +100,33 @@ const GamesList = () => {
     }
   };
 
-  if (loading) {
-    return <div className="loading">Loading games...</div>;
-  }
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setPage(1);
+    // fetch is triggered by useEffect dependency on searchQuery
+  };
 
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setPage(1);
+  };
+
+  // Keep search and filters visible during loading to avoid losing focus
   return (
     <div className="container">
       <h1>Games & Matches</h1>
+      <form className="search-form" onSubmit={(e) => { e.preventDefault(); setPage(1); setSearchQuery(searchQuery); }}>
+        <input
+          type="text"
+          placeholder="Search by game name, team, or league"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="search-input"
+        />
+        <button type="submit" className="btn">Search</button>
+        <button type="button" className="btn" onClick={handleClearSearch}>Clear</button>
+      </form>
+
       <FilterBar
         sports={sports}
         providers={providers}
@@ -84,21 +134,32 @@ const GamesList = () => {
         onFilterChange={handleFilterChange}
       />
       {error && <div className="error-message">{error}</div>}
-      {games.length === 0 ? (
+
+      {loading ? (
+        <div className="loading">Loading games...</div>
+      ) : games.length === 0 ? (
         <div className="empty-state">
           <h3>No games found</h3>
           <p>Try adjusting your filters</p>
         </div>
       ) : (
-        <div className="games-grid">
-          {games.map((game) => (
-            <GameCard
-              key={game.id}
-              game={game}
-              onFavoriteToggle={handleFavoriteToggle}
-            />
-          ))}
-        </div>
+        <>
+          <div className="games-grid">
+            {games.map((game) => (
+              <GameCard
+                key={game.id}
+                game={game}
+                onFavoriteToggle={handleFavoriteToggle}
+              />
+            ))}
+          </div>
+
+          <div className="pagination">
+            <button className="btn" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
+            <span>Page {page} of {totalPages}</span>
+            <button className="btn" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
+          </div>
+        </>
       )}
     </div>
   );
