@@ -24,24 +24,33 @@ Backend API for the Sports/Casino Games Platform built with Node.js, Express, an
 npm install
 ```
 
-2. Create a `.env` file in the backend root directory:
+2. Create a `.env` file in the backend root directory (or copy `.env.example` and set values):
 ```env
 PORT=5000
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=sports_platform
 DB_USER=postgres
-DB_PASSWORD=your_password
+DB_PASSWORD=your_password_here # required for DB connection (SCRAM/MD5 auth)
 JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
 ```
+
+Note: If `DB_PASSWORD` is not set, the server will start but database-related endpoints will fail. For local development, set `DB_PASSWORD` to your Postgres password, then run `node scripts/initDb.js` and `npm run seed` to initialize and seed the DB.
 
 3. Create the PostgreSQL database:
 ```sql
 CREATE DATABASE sports_platform;
 ```
 
-4. Initialize the database tables:
+4. Initialize the database tables (after running Postgres):
 ```bash
+# Option A: Local Postgres (make sure DB_PASSWORD is set in .env)
+node scripts/initDb.js
+
+# Option B: Use Docker (recommended for easy setup)
+# 1) Ensure you have Docker installed
+# 2) From this folder run: `npm run docker:up` (will start Postgres using your `.env` values)
+# 3) Wait until the DB container healthcheck is healthy, then run:
 node scripts/initDb.js
 ```
 
@@ -49,6 +58,13 @@ node scripts/initDb.js
 ```bash
 npm run seed
 ```
+
+Docker notes:
+- The Docker Compose file (`docker-compose.yml`) in the `backend/` folder uses the environment values in `.env` (copy `.env.example`).
+- Start/stop Docker container:
+  - `npm run docker:up`  # start Postgres container
+  - `npm run docker:down`  # stop and remove container
+- After starting Docker, run `npm run init-db` and `npm run seed` to prepare the DB for the app.
 
 6. Start the server:
 ```bash
