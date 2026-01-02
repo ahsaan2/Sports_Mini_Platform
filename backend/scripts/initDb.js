@@ -2,6 +2,10 @@ const pool = require('../config/database');
 
 const createTables = async () => {
   try {
+    if (!pool.isConfigured) {
+      throw new Error('DB_PASSWORD is not set. Please set DB_PASSWORD in backend/.env (copy .env.example) and rerun `npm run init-db`.');
+    }
+
     // Users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (

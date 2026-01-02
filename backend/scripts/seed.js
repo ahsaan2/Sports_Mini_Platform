@@ -3,6 +3,11 @@ const createTables = require('./initDb');
 
 const seedData = async () => {
   try {
+    // Ensure DB configured before seeding
+    if (!pool.isConfigured) {
+      throw new Error('DB_PASSWORD is not set. Please set DB_PASSWORD in backend/.env (copy .env.example) and rerun `npm run seed`.');
+    }
+
     // Create tables first
     await createTables();
 
