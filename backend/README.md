@@ -59,6 +59,21 @@ node scripts/initDb.js
 npm run seed
 ```
 
+### Deployment & One-time DB Initialization
+For hosting providers that do not allow shell access (e.g., Render free tier), the app can optionally perform an idempotent init and seed on startup.
+
+Environment variables:
+- `RUN_INIT_ON_DEPLOY=true` — If set, the service will attempt to run the DB initialization and seed after a successful DB connection on startup.
+- `FORCE_SEED=true` — When set, the seed script will clear `favorites` and `games` tables and re-insert sample data (use with caution).
+
+Recommended workflow when you cannot access a shell:
+1. Set `DB_*` env vars or `DATABASE_URL` in your hosting provider and set `JWT_SECRET`.
+2. Set `RUN_INIT_ON_DEPLOY=true` and deploy the service.
+3. After deploy succeeds and logs indicate `Auto init/seed completed`, remove `RUN_INIT_ON_DEPLOY` or set it to `false` to avoid re-running on every restart.
+
+Notes:
+- The default seed behavior is non-destructive and will only insert sample data when the `games` table is empty. Use `FORCE_SEED=true` only when you want to reset seeded data.
+
 Docker notes:
 - The Docker Compose file (`docker-compose.yml`) in the `backend/` folder uses the environment values in `.env` (copy `.env.example`).
 - Start/stop Docker container:

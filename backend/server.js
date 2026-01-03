@@ -6,7 +6,25 @@ const PORT = process.env.PORT || 5000;
 // Test DB connectivity on startup
 if (pool.isConfigured) {
   pool.query('SELECT NOW()')
-    .then(() => console.log('Database connection test succeeded'))
+    .then(async () => {
+      console.log('Database connection test succeeded');
+
+      // Optional: run init and seed on first deploy when explicitly enabled
+      // Controlled via RUN_INIT_ON_DEPLOY=true and optional FORCE_SEED=true
+      if (process.env.RUN_INIT_ON_DEPLOY === 'true') {
+        try {
+          console.log('RUN_INIT_ON_DEPLOY=true detected — running database initialization and seed (if applicable)');
+          const createTables = require('./scripts/initDb');
+          const seedData = require('./scripts/seed');
+          await createTables();
+          await seedData();
+          console.log('Auto init/seed completed');
+        } catch (err) {
+          console.error('Auto init/seed failed:', err);
+        }
+      }
+
+    })
     .catch((err) => {
       console.error('Database connection test failed:', err.message);
       if (err.message && err.message.includes('SASL')) {

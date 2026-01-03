@@ -11,9 +11,21 @@ const seedData = async () => {
     // Create tables first
     await createTables();
 
-    // Clear existing data
-    await pool.query('DELETE FROM favorites');
-    await pool.query('DELETE FROM games');
+    // If FORCE_SEED is not set, be idempotent: only insert sample data when games table is empty
+    const forceSeed = process.env.FORCE_SEED === 'true';
+
+    if (!forceSeed) {
+      const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM games');
+      const existing = rows && rows[0] ? rows[0].count : 0;
+      if (existing > 0) {
+        console.log('Games table already has data; skipping seed (set FORCE_SEED=true to force reseed)');
+        return;
+      }
+    } else {
+      // Force seed: clear existing data
+      await pool.query('DELETE FROM favorites');
+      await pool.query('DELETE FROM games');
+    }
 
     // Insert sports matches
     const sportsMatches = [
