@@ -21,7 +21,10 @@ const GameCard = ({ game, onFavoriteToggle }) => {
   return (
     <div className="game-card">
       <div className="game-header">
-        <h3>{game.game_name}</h3>
+        <div className="title-with-badge">
+          <h3>{game.game_name}</h3>
+          <span className={`badge ${game.game_type}`}>{game.game_type === 'sports' ? 'Sports' : 'Casino'}</span>
+        </div>
         <button
           onClick={handleFavoriteClick}
           className={`favorite-btn ${game.is_favorite ? 'active' : ''}`}
