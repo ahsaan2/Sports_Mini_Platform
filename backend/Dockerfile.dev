@@ -1,0 +1,16 @@
+# Backend development Dockerfile
+FROM node:18-alpine
+
+WORKDIR /usr/src/app
+
+# Install dependencies (including dev deps)
+COPY package*.json ./
+RUN npm ci
+
+# Copy source
+COPY . .
+
+EXPOSE 5000
+
+# Use nodemon for hot-reload during development
+CMD ["npm", "run", "dev"]
